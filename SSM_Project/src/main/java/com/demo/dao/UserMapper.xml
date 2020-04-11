@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--配置此mapper.xml对应的mapper类-->
+<mapper namespace="com.demo.dao.UserMapper">
+
+    <select id="findUserByUserName" resultType="com.demo.vo.User">
+        select * from user where username = #{userName}
+    </select>
+    <update id="updateUserById" parameterType="com.demo.vo.User">
+        update user set name = #{name} where id = #{id}
+    </update>
+
+    <insert id="insertUser" parameterType="com.demo.vo.User">
+        insert into user(username, password, createtime, updatetime)
+            values (#{userName}, #{passWord}, #{createTime}, #{updateTime})
+    </insert>
+
+    <!--  自定义模板解释器mybatis-freemarker的使用  -->
+    <select id="findByIds"
+            resultType="com.demo.vo.User"
+            lang="org.mybatis.scripting.freemarker.FreeMarkerLanguageDriver">
+        select * from user
+        where id in(${ids?join(',')})
+    </select>
+
+</mapper>

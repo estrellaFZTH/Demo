@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context
+                           http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/aop
+                           http://www.springframework.org/schema/aop/spring-aop.xsd
+                           http://www.springframework.org/schema/tx
+                           http://www.springframework.org/schema/tx/spring-tx.xsd">
+    <!-- spring的配置文件 -->
+    <!-- 开启注解扫描：希望spring框架处理service和dao，controller不需要Spring框架去处理 -->
+    <context:component-scan base-package="com.demo">
+        <!-- 配置那些注解不用扫描 -->
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+    <!-- Spring整合Mybatis框架 -->
+    <!-- 配置连接池 -->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <property name="driverClass" value="com.mysql.jdbc.Driver"></property>
+        <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/ssm_demo"></property>
+        <property name="user" value="root"></property>
+        <property name="password" value="123456"></property>
+    </bean>
+
+    <!-- 配置SqlSessionFactory工厂： 生产session对象 -->
+    <bean id="sqlSessionFactoryBean" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+    <!-- 配置UserMapper接口所在包 -->
+    <bean id="mapperScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!-- 要扫描的包 -->
+        <property name="basePackage" value="com.demo.dao"></property>
+    </bean>
+
+    <!-- 配置Spring框架声明事务管理-->
+    <!-- 配置事务管理器 -->
+    <bean id="dataSourceTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+    <!-- 事务注解驱动，标注@Transactional的类和方法将具有事务性 -->
+    <tx:annotation-driven transaction-manager="dataSourceTransactionManager" />
+
+    <!-- 配置事务通知 -->
+    <tx:advice id="txAdvice" transaction-manager="dataSourceTransactionManager">
+        <tx:attributes>
+            <tx:method name="find*" read-only="true"/>  <!-- 表示find方法打头的，只读的事务 -->
+            <tx:method name="*" isolation="DEFAULT" />  <!-- 除了find打头的其他的方法 -->
+        </tx:attributes>
+    </tx:advice>
+    <!-- 配置AOP增强 -->
+    <aop:config>
+        <aop:pointcut id="pt1" expression="execution(* com.demo.service.impl.*ServiceImpl.*(..))"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="pt1" />
+    </aop:config>
+
+
+    <!-- 测试SpringAOP通知用 -->
+    <!--  配置Logger类 测试AOP通知用  -->
+    <bean id="logger" class="com.demo.utils.Logger"></bean>
+    <aop:config>
+        <!--  配置切面  -->
+        <aop:aspect id="logAdvice" ref="logger">
+            <!-- 配置环绕通知  -->
+            <aop:around method="aroundPrintLog" pointcut-ref="pt1"></aop:around>
+        </aop:aspect>
+    </aop:config>
+    <!--  配置 spring 中开启注解 AOP 的支持  -->
+    <aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+
+
+    <!--  spring 中基于 XML 的声明式事务控制步骤
+         1、配置事务管理器
+         2、开启 spring 对注解事务的支持
+         3、在需要事务支持的地方使用 @Transactional 注解
+     -->
+    <!--  配置 事务管理器 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!--  开启 spring 对注解事务的支持 -->
+    <tx:annotation-driven transaction-manager="transactionManager"></tx:annotation-driven>
+</beans>
